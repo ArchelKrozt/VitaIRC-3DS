@@ -3,6 +3,9 @@ BasicInfo:
   ProductCode             : "CTR-H-VIRC"
   Logo                    : Homebrew
 
+RomFs:
+  RootPath                : romfs
+
 TitleInfo:
   Category                : Application
   UniqueId                : 0xF7C4A
