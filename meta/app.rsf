@@ -47,7 +47,7 @@ AccessControlInfo:
   EnableL2Cache                 : true
   CanAccessCore2                : true
   MemoryMapping:
-   - 0x1ff00000-0x1ff7ffff:r
+   - 0x1ff00000-0x1ff7ffff
   SystemCallAccess:
     ArbitrateAddress: 34
     Break: 60
