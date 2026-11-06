@@ -17,7 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Libraries
-        run: dkp-pacman -Sy --noconfirm --needed 3ds-curl 3ds-mbedtls 3ds-zlib
+        # the image usually has them; the package server sometimes refuses CI (403)
+        run: dkp-pacman -Q 3ds-curl 3ds-mbedtls 3ds-zlib || dkp-pacman -Sy --noconfirm --needed 3ds-curl 3ds-mbedtls 3ds-zlib
       - name: Build .3dsx
         run: make -j"$(nproc)"
       - uses: actions/upload-artifact@v4
