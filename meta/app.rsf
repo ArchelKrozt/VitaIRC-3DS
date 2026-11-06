@@ -23,7 +23,6 @@ AccessControlInfo:
   FileSystemAccess:
    - DirectSdmc
    - DirectSdmcWrite
-  IoAccessControl:
   IdealProcessor                : 0
   AffinityMask                  : 1
   Priority                      : 16
@@ -99,7 +98,6 @@ AccessControlInfo:
     WaitSynchronization1: 36
     WaitSynchronizationN: 37
     Backdoor: 123
-  InterruptNumbers:
   ServiceAccessControl:
    - APT:U
    - ac:u
@@ -138,9 +136,6 @@ AccessControlInfo:
   OtherUserSaveDataId3          : 0
   ExtSaveDataId                 : 0
   UseOtherVariationSaveData     : false
-  AccessibleSaveDataIds         : []
-  ExtData                       : []
-  StorageId                     : []
   AffinityMask                  : 1
   Priority                      : 16
 
