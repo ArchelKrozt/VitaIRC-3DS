@@ -16,23 +16,34 @@ jobs:
     container: devkitpro/devkitarm:latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Libraries
         run: dkp-pacman -Sy --noconfirm --needed 3ds-curl 3ds-mbedtls 3ds-zlib
-
       - name: Build .3dsx
         run: make -j"$(nproc)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elf
+          path: |
+            VitaIRC.3dsx
+            VitaIRC.elf
 
+  # bannertool and makerom need a newer glibc than the devkitPro image
+  cia:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: elf
       - name: CIA tools
         run: |
-          apt-get update -qq && apt-get install -y -qq unzip curl > /dev/null
           curl -sSL -o bt.tar.gz https://github.com/carstene1ns/3ds-bannertool/releases/download/1.2.3/bannertool-1.2.3-linux.tar.gz
           mkdir bt && tar xzf bt.tar.gz -C bt
           curl -sSL -o mr.zip https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.19.0/makerom-v0.19.0-ubuntu_x86_64.zip
           unzip -q mr.zip -d mr
           echo "BANNERTOOL=$(find bt -type f -name bannertool | head -1)" >> "$GITHUB_ENV"
           echo "MAKEROM=$(find mr -type f -name makerom | head -1)" >> "$GITHUB_ENV"
-
       - name: Build .cia
         run: |
           chmod +x "$BANNERTOOL" "$MAKEROM"
@@ -43,14 +54,12 @@ jobs:
           "$MAKEROM" -f cia -o VitaIRC.cia -elf VitaIRC.elf -rsf meta/app.rsf -icon icon.icn -banner banner.bnr \
                      -exefslogo -target t -major "$MAJOR" -minor "$MINOR" -micro 0
           ls -la VitaIRC.3dsx VitaIRC.cia
-
       - uses: actions/upload-artifact@v4
         with:
           name: VitaIRC-3DS
           path: |
             VitaIRC.3dsx
             VitaIRC.cia
-
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
