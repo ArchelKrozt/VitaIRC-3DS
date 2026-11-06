@@ -136,8 +136,6 @@ AccessControlInfo:
   OtherUserSaveDataId3          : 0
   ExtSaveDataId                 : 0
   UseOtherVariationSaveData     : false
-  AffinityMask                  : 1
-  Priority                      : 16
 
 SystemControlInfo:
   SaveDataSize: 0KB
