@@ -48,6 +48,7 @@ AccessControlInfo:
   CanAccessCore2                : true
   MemoryMapping:
    - 0x1ff00000-0x1ff7ffff
+   - 0x1f000000-0x1f5fffff:r
   SystemCallAccess:
     ArbitrateAddress: 34
     Break: 60
