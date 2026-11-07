@@ -15,6 +15,7 @@ typedef struct {
 int  pic_from_memory(Pic *p, const unsigned char *buf, size_t len, int maxdim);
 int  pic_from_file(Pic *p, const char *path, int maxdim);
 void pic_free(Pic *p);
+int  pic_from_rgba(Pic *p, const unsigned char *px, int w, int h);
 /* Draws the picture scaled to (w,h) at (x,y) */
 void pic_draw(const Pic *p, float x, float y, float w, float h);
 

@@ -70,6 +70,7 @@ static void close_list(void)
 enum {
 	ST_TRPROV = 1, ST_KEY, ST_MODEL, ST_LANG_IN, ST_LANG_OUT, ST_HIGHLIGHT, ST_IGNORE, ST_SOUND,
 	ST_COLORS, ST_JOINS, ST_FONT, ST_UILANG, ST_UPDATE_AUTO, ST_UPDATE_NOW, ST_ABOUT, ST_TZ,
+	ST_ADULT, ST_SKUSER, ST_SKPASS, ST_IMGHOST, ST_IMGBB, ST_IMGUR, ST_LITTER,
 };
 
 static void save_cfg(void)
@@ -82,6 +83,18 @@ static void on_key(const char *v, void *a)       { (void)a; str_copy(g_cfg.opena
 static void on_model(const char *v, void *a)     { (void)a; str_copy(g_cfg.openai_model, v[0] ? v : "gpt-4o-mini", sizeof(g_cfg.openai_model)); save_cfg(); rebuild(); }
 static void on_highlight(const char *v, void *a) { (void)a; str_copy(g_cfg.highlight, v, sizeof(g_cfg.highlight)); save_cfg(); rebuild(); }
 static void on_ignore(const char *v, void *a)    { (void)a; str_copy(g_cfg.ignore, v, sizeof(g_cfg.ignore)); save_cfg(); rebuild(); }
+static void on_skuser(const char *v, void *a)    { (void)a; str_copy(g_cfg.sankaku_user, v, sizeof(g_cfg.sankaku_user)); save_cfg(); rebuild(); }
+static void on_skpass(const char *v, void *a)    { (void)a; str_copy(g_cfg.sankaku_pass, v, sizeof(g_cfg.sankaku_pass)); save_cfg(); rebuild(); }
+static void on_imgbb(const char *v, void *a)     { (void)a; str_copy(g_cfg.imgbb_key, v, sizeof(g_cfg.imgbb_key)); save_cfg(); rebuild(); }
+static void on_imgur(const char *v, void *a)     { (void)a; str_copy(g_cfg.imgur_id, v, sizeof(g_cfg.imgur_id)); save_cfg(); rebuild(); }
+
+static void adult_yes(int arg)
+{
+	(void)arg;
+	g_cfg.booru_adult = 1;
+	save_cfg();
+	rebuild();
+}
 
 static const char *lang_name(const char *code)
 {
@@ -117,6 +130,35 @@ static void build_settings(void)
 	it = lv_add(&lv, T("Traducir lo que escribo a"));
 	str_copy(it->value, lang_name(g_cfg.lang_out), sizeof(it->value));
 	it->id = ST_LANG_OUT;
+
+	lv_header(&lv, T("Buscador de imágenes"));
+	it = lv_add(&lv, T("Contenido para adultos (18+)"));
+	it->toggle = g_cfg.booru_adult; it->id = ST_ADULT;
+	it = lv_add(&lv, T("Cuenta de Sankaku (opcional)"));
+	str_copy(it->value, g_cfg.sankaku_user[0] ? g_cfg.sankaku_user : T("(sin cuenta)"), sizeof(it->value));
+	it->id = ST_SKUSER;
+	if (g_cfg.sankaku_user[0]) {
+		it = lv_add(&lv, T("Contraseña de Sankaku"));
+		str_copy(it->value, g_cfg.sankaku_pass[0] ? "••••••" : T("(ninguna)"), sizeof(it->value));
+		it->id = ST_SKPASS;
+	}
+	it = lv_add(&lv, T("Servicio para subir imágenes"));
+	str_copy(it->value, img_host_name(g_cfg.img_host), sizeof(it->value));
+	it->id = ST_IMGHOST;
+	if (g_cfg.img_host == IMG_IMGBB) {
+		it = lv_add(&lv, T("API key de ImgBB"));
+		str_copy(it->value, g_cfg.imgbb_key[0] ? "••••••" : T("(sin configurar)"), sizeof(it->value));
+		it->id = ST_IMGBB;
+	} else if (g_cfg.img_host == IMG_IMGUR) {
+		it = lv_add(&lv, T("Client ID de Imgur"));
+		str_copy(it->value, g_cfg.imgur_id[0] ? g_cfg.imgur_id : T("(sin configurar)"), sizeof(it->value));
+		it->id = ST_IMGUR;
+	} else if (g_cfg.img_host == IMG_LITTERBOX) {
+		static const char *lt[] = { "1 h", "12 h", "24 h", "72 h" };
+		it = lv_add(&lv, T("Las imágenes de Litterbox duran"));
+		str_copy(it->value, lt[g_cfg.litter_time & 3], sizeof(it->value));
+		it->id = ST_LITTER;
+	}
 
 	lv_header(&lv, T("Chat"));
 	it = lv_add(&lv, T("Palabras de alerta"));
@@ -178,6 +220,22 @@ static void settings_activate(LItem *it)
 	case ST_UILANG: g_cfg.ui_lang = (g_cfg.ui_lang + 1) % 3; save_cfg(); break;
 	case ST_UPDATE_AUTO: g_cfg.update_check = !g_cfg.update_check; save_cfg(); break;
 	case ST_UPDATE_NOW: update_check_request(1); app_toast("%s", T("Buscando actualizaciones...")); break;
+	case ST_ADULT:
+		if (g_cfg.booru_adult) {
+			g_cfg.booru_adult = 0;
+			save_cfg();
+		} else {
+			confirm_ask(T("El contenido para adultos es solo para mayores de 18 años. ¿Confirmas que tienes 18 años o más?"),
+			            T("Tengo 18+"), adult_yes, 0);
+			return;
+		}
+		break;
+	case ST_SKUSER: field_edit(T("Usuario o correo de Sankaku"), g_cfg.sankaku_user, 62, 0, on_skuser, NULL); return;
+	case ST_SKPASS: field_edit(T("Contraseña de Sankaku"), g_cfg.sankaku_pass, 126, 1, on_skpass, NULL); return;
+	case ST_IMGHOST: g_cfg.img_host = (g_cfg.img_host + 1) % IMG_COUNT; save_cfg(); break;
+	case ST_IMGBB: field_edit(T("API key de ImgBB (api.imgbb.com)"), g_cfg.imgbb_key, 78, 1, on_imgbb, NULL); return;
+	case ST_IMGUR: field_edit(T("Client ID de Imgur"), g_cfg.imgur_id, 62, 0, on_imgur, NULL); return;
+	case ST_LITTER: g_cfg.litter_time = (g_cfg.litter_time + 1) % 4; save_cfg(); break;
 	}
 	rebuild();
 }
@@ -545,6 +603,11 @@ static void build_profile(void)
 	it = lv_add(&lv, T("Compartir mi perfil"));
 	it->toggle = g_prof_share;
 	it->id = PR_SHARE;
+	char fb[96];
+	snprintf(fb, sizeof(fb), T("Favoritos públicos (%d/%d)"), social_public_count(), PROF_MAX_FAVS);
+	it = lv_add(&lv, fb);
+	str_copy(it->value, T("SELECT en Favoritos del buscador"), sizeof(it->value));
+	it->dim = 1;
 	FILE *f = fopen(PROF_AVATAR, "rb");
 	if (f) {
 		fclose(f);

@@ -16,6 +16,7 @@ enum {
 	BM_MSG,         /* actions for the message picked on the top screen */
 	BM_LIST,        /* settings, servers, channel browser... */
 	BM_CARD,        /* user card (WHOIS + profile) shown on top */
+	BM_BOORU,       /* image search */
 };
 
 extern int  g_bm;
@@ -84,6 +85,16 @@ void card_draw_top(void);
 void card_draw_bottom(void);
 void card_input(void);
 void card_close(void);
+
+/* ---- image search (booru_ui.c) ---- */
+void booru_ui_open(void);
+void booru_ui_input(void);
+void booru_ui_draw(void);
+int  booru_ui_animating(void);
+/* the picture asked for the viewer arrived (g_fetch_*) */
+void booru_ui_fetched(void);
+/* Puts text in the chat field of the current window (e.g. an image link) and shows the keyboard */
+void bottom_compose(const char *text);
 
 /* ---- misc ---- */
 void sound_init(void);

@@ -1,7 +1,7 @@
 #ifndef VITAIRC_CONFIG_H
 #define VITAIRC_CONFIG_H
 
-#define APP_VERSION   "1.0"
+#define APP_VERSION   "1.1"
 #define DATA_DIR      "sdmc:/3ds/VitaIRC"
 #define CONFIG_PATH   DATA_DIR "/config.ini"
 #define CA_PATH       "romfs:/cacert.pem"

@@ -11,7 +11,12 @@
 #define STBI_WRITE_NO_STDIO
 #include "stb_image_write.h"
 
+#define SIMPLEWEBP_IMPLEMENTATION
+#define SIMPLEWEBP_DISABLE_STDIO
+#include "simplewebp.h"
+
 #include "img.h"
+#include "imgutil.h"
 
 static unsigned next_pow2(unsigned v)
 {
@@ -45,7 +50,7 @@ static unsigned char *scale_rgba(const unsigned char *src, int sw, int sh, int d
 	return dst;
 }
 
-static int pic_from_rgba(Pic *p, const unsigned char *px, int w, int h)
+int pic_from_rgba(Pic *p, const unsigned char *px, int w, int h)
 {
 	memset(p, 0, sizeof(*p));
 	unsigned tw = next_pow2(w), th = next_pow2(h);
@@ -211,4 +216,112 @@ int avatar_from_photo(const char *path, const char *out_small, const char *out_b
 	free(big);
 	free(small);
 	return rc;
+}
+
+/* ---------------- helpers for the shared image search (imgutil.h) ---------------- */
+
+int img_is_webp(const unsigned char *buf, size_t len)
+{
+	return len > 12 && !memcmp(buf, "RIFF", 4) && !memcmp(buf + 8, "WEBP", 4);
+}
+
+int img_is_gif(const unsigned char *buf, size_t len)
+{
+	return len > 6 && !memcmp(buf, "GIF8", 4);
+}
+
+static unsigned char *fit(unsigned char *px, int *w, int *h, int maxdim, int stb)
+{
+	if (*w <= maxdim && *h <= maxdim)
+		return px;
+	int dw = *w >= *h ? maxdim : *w * maxdim / *h, dh = *h >= *w ? maxdim : *h * maxdim / *w;
+	if (dw < 1) dw = 1;
+	if (dh < 1) dh = 1;
+	unsigned char *s = scale_rgba(px, *w, *h, dw, dh);
+	if (stb) stbi_image_free(px); else free(px);
+	*w = dw;
+	*h = dh;
+	return s;
+}
+
+unsigned char *webp_decode_rgba(const unsigned char *buf, size_t len, int maxdim, int *w, int *h)
+{
+	simplewebp *wp = NULL;
+	if (simplewebp_load_from_memory((void *)buf, len, NULL, &wp) != SIMPLEWEBP_NO_ERROR)
+		return NULL;
+	size_t ww, hh;
+	simplewebp_get_dimensions(wp, &ww, &hh);
+	unsigned char *px = ww && hh && ww * hh <= 4096 * 4096 ? malloc(ww * hh * 4) : NULL;
+	if (!px || simplewebp_decode(wp, px, NULL) != SIMPLEWEBP_NO_ERROR) {
+		free(px);
+		simplewebp_unload(wp);
+		return NULL;
+	}
+	simplewebp_unload(wp);
+	*w = (int)ww;
+	*h = (int)hh;
+	return fit(px, w, h, maxdim, 0);
+}
+
+unsigned char *img_decode_rgba(const unsigned char *buf, size_t len, int maxdim, int *w, int *h)
+{
+	if (img_is_webp(buf, len))
+		return webp_decode_rgba(buf, len, maxdim, w, h);
+	int n;
+	unsigned char *px = stbi_load_from_memory(buf, (int)len, w, h, &n, 4);
+	return px ? fit(px, w, h, maxdim, 1) : NULL;
+}
+
+vita2d_texture *img_texture(const unsigned char *buf, size_t len, int maxdim)
+{
+	if (maxdim > 1024) maxdim = 1024;
+	int w, h;
+	unsigned char *px = img_decode_rgba(buf, len, maxdim, &w, &h);
+	if (!px)
+		return NULL;
+	vita2d_texture *t = calloc(1, sizeof(*t));
+	if (!t || pic_from_rgba(&t->pic, px, w, h) != 0) {
+		free(t);
+		free(px);
+		return NULL;
+	}
+	t->w = w;
+	t->h = h;
+	/* keep a copy only of small pictures (thumbnails a favorite may save) */
+	if (w * h <= 256 * 256) t->rgba = px;
+	else free(px);
+	return t;
+}
+
+void vita2d_free_texture(vita2d_texture *t)
+{
+	if (!t) return;
+	pic_free(&t->pic);
+	free(t->rgba);
+	free(t);
+}
+
+int rgba_save_jpeg(const unsigned char *px, int w, int h, int stride, const char *path, int quality)
+{
+	unsigned char *tight = NULL;
+	if (stride != w * 4) {
+		tight = malloc((size_t)w * h * 4);
+		if (!tight) return -1;
+		for (int y = 0; y < h; y++)
+			memcpy(tight + (size_t)y * w * 4, px + (size_t)y * stride, (size_t)w * 4);
+		px = tight;
+	}
+	Mem m = { 0 };
+	stbi_write_jpg_to_func(mem_write, &m, w, h, 4, px, quality);
+	free(tight);
+	int r = m.n > 0 ? write_file(path, m.d, m.n) : -1;
+	free(m.d);
+	return r;
+}
+
+int tex_save_jpeg(vita2d_texture *tex, const char *path, int maxdim, int quality)
+{
+	(void)maxdim;
+	if (!tex || !tex->rgba) return -1;
+	return rgba_save_jpeg(tex->rgba, tex->w, tex->h, tex->w * 4, path, quality);
 }

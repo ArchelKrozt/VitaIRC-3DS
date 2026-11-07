@@ -391,7 +391,7 @@ static const char *const tbl[][2] = {
 	{ "Favoritos", "Favorites" },
 	{ "Formato no soportado (PNG, JPG o WebP).", "Unsupported format (PNG, JPG or WebP)." },
 	{ "Guardada en %s", "Saved to %s" },
-	{ "Guardando en ux0:picture/VitaIRC...", "Saving to ux0:picture/VitaIRC..." },
+	{ "Guardando en sdmc:/pictures/VitaIRC...", "Saving to sdmc:/pictures/VitaIRC..." },
 	{ "Guardar en la Vita", "Save to the Vita" },
 	{ "No (solo general)", "No (general only)" },
 	{ "No se pudo guardar el archivo", "Could not save the file" },

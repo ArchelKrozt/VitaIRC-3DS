@@ -18,6 +18,7 @@
 #include "net.h"
 #include "httpc.h"
 #include "social.h"
+#include "booru.h"
 #include "i18n.h"
 #include "util.h"
 #include "vita_compat.h"
@@ -177,13 +178,19 @@ static void events(void)
 		c->unread = 0;
 		c->mention = 0;
 	}
-	/* uploads and image downloads aren't used on the 3DS yet */
-	if (g_upload_done) g_upload_done = 0;
-	if (g_fetch_done) {
-		free(g_fetch_buf);
-		g_fetch_buf = NULL;
-		g_fetch_done = 0;
+	/* an image sent from the search: the link goes to the text field of its window */
+	if (g_upload_done) {
+		if (g_upload_done == 1) {
+			set_view(g_upload_sidx, g_upload_uid);
+			bottom_compose(g_upload_result);
+			app_toast("%s", T("Enlace listo: agrega un texto o toca Enviar"));
+		} else {
+			app_toast(T("Error al subir: %s"), g_upload_result);
+		}
+		g_upload_done = 0;
 	}
+	if (g_fetch_done)
+		booru_ui_fetched();
 }
 
 void join_invite(int sidx)
@@ -243,6 +250,7 @@ int main(void)
 	pthread_mutex_unlock(&g_lock);
 	httpc_init();
 	net_init();
+	booru_init();
 	social_load();
 	sound_init();
 	if (net_ok) {
@@ -310,7 +318,23 @@ int main(void)
 	pthread_mutex_lock(&g_lock);
 	session_save();
 	pthread_mutex_unlock(&g_lock);
+	/* the network threads must be done with their sockets before socExit:
+	 * QUIT, wait for the connections to close, then stop the threads */
 	irc_quit_all();
+	for (int t = 0; t < 30; t++) {
+		int busy = 0;
+		for (int i = 0; i < g_nservers; i++)
+			if (g_servers[i].thread_started && g_servers[i].state != SS_OFF)
+				busy = 1;
+		if (!busy)
+			break;
+		svcSleepThread(100 * 1000000LL);
+	}
+	g_app_quit = 1;
+	for (int i = 0; i < g_nservers; i++)
+		if (g_servers[i].thread_started)
+			pthread_join(g_servers[i].thread, NULL);
+	svcSleepThread(300 * 1000000LL);       /* HTTP workers abort their transfers */
 	sound_exit();
 	draw_exit();
 	C2D_Fini();

@@ -85,6 +85,51 @@ int sceIoMkdir(const char *path, int mode)
 	return mkdir(path, mode);
 }
 
+int sceIoRemove(const char *path)
+{
+	return remove(path);
+}
+
+#include <dirent.h>
+static DIR *dirs[8];
+
+SceUID sceIoDopen(const char *path)
+{
+	DIR *d = opendir(path);
+	if (!d)
+		return -1;
+	for (int i = 0; i < 8; i++)
+		if (!dirs[i]) {
+			dirs[i] = d;
+			return i;
+		}
+	closedir(d);
+	return -1;
+}
+
+int sceIoDread(SceUID fd, SceIoDirent *e)
+{
+	if (fd < 0 || fd >= 8 || !dirs[fd])
+		return -1;
+	struct dirent *de;
+	while ((de = readdir(dirs[fd]))) {
+		if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
+			continue;
+		snprintf(e->d_name, sizeof(e->d_name), "%s", de->d_name);
+		return 1;
+	}
+	return 0;
+}
+
+int sceIoDclose(SceUID fd)
+{
+	if (fd < 0 || fd >= 8 || !dirs[fd])
+		return -1;
+	closedir(dirs[fd]);
+	dirs[fd] = NULL;
+	return 0;
+}
+
 /* ---------------- time zone ---------------- */
 
 /* UTC (seconds since 1970) -> offset of the console clock, to a quarter hour */

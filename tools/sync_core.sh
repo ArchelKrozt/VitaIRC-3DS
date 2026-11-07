@@ -9,16 +9,18 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VITA="${VITA_SRC:-$ROOT/../VITA-IRC/VitaIRC/src}"
 OUT="$ROOT/core"
 FILES="irc.c irc.h conn.c conn.h config.c config.h history.c history.h util.c util.h
-       minijson.c minijson.h net.c net.h httpc.c httpc.h social.c social.h i18n.c i18n.h"
+       minijson.c minijson.h net.c net.h httpc.c httpc.h social.c social.h i18n.c i18n.h
+       booru.c booru.h"
 mkdir -p "$OUT"
 for f in $FILES; do
 	sed -e 's|ux0:data/VitaIRC|sdmc:/3ds/VitaIRC|g' \
+	    -e 's|ux0:picture/VitaIRC|sdmc:/pictures/VitaIRC|g' -e 's|"ux0:picture"|"sdmc:/pictures"|g' \
 	    -e 's|"ux0:data"|"sdmc:/3ds"|g' \
 	    -e 's|app0:|romfs:/|g' \
 	    -e 's|PlayStation Vita|Nintendo 3DS|g' \
 	    -e 's|"Vita%04u"|"Vita3DS%04u"|' \
 	    -e 's|edited with VitaShell|edited on a computer (SD card: 3ds/VitaIRC)|' \
-	    -e 's|^#define APP_VERSION .*|#define APP_VERSION   "1.0"|' \
+	    -e 's|^#define APP_VERSION .*|#define APP_VERSION   "1.1"|' \
 	    -e 's|^#define UPDATE_REPO .*|#define UPDATE_REPO   "ArchelKrozt/VitaIRC-3DS"|' \
 	    -e 's|^const char \*T(const char \*es)$|const char *T_core(const char *es)|' \
 	    -e 's|^#define MAX_MSGS      500|#define MAX_MSGS      300|' \

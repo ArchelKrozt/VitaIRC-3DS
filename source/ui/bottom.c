@@ -120,7 +120,17 @@ void bottom_kbd_reset(void)
 
 int bottom_animating(void)
 {
-	return kbd_busy() || lv_moving(&pv) || lv_moving(&mv) || tab_vel != 0 || in.touching;
+	return kbd_busy() || lv_moving(&pv) || lv_moving(&mv) || tab_vel != 0 || in.touching || booru_ui_animating();
+}
+
+void bottom_compose(const char *text)
+{
+	draft_switch();
+	if (chat_edit.len && chat_edit.buf[chat_edit.len - 1] != ' ')
+		edit_insert(&chat_edit, " ");
+	edit_insert(&chat_edit, text);
+	g_top_overlay = NULL;
+	back_to_kbd();
 }
 
 void back_to_kbd(void)
@@ -512,7 +522,7 @@ static void draw_kbd_mode(void)
 enum {
 	PA_VIEW = 1, PA_SERVER, PA_USER, PA_UACT,
 	PA_JOIN, PA_CHANLIST, PA_TR_IN, PA_TR_OUT, PA_TR_LANG, PA_TOPIC, PA_NICK, PA_MUTE,
-	PA_PART, PA_CLOSE, PA_SERVERS, PA_PROFILE, PA_SETTINGS, PA_HELP, PA_EXIT, PA_CONNECT, PA_AWAY,
+	PA_PART, PA_CLOSE, PA_SERVERS, PA_PROFILE, PA_SETTINGS, PA_HELP, PA_EXIT, PA_CONNECT, PA_AWAY, PA_IMAGES,
 };
 
 enum { UA_CARD = 1, UA_QUERY, UA_MENTION, UA_OP, UA_DEOP, UA_VOICE, UA_DEVOICE, UA_KICK, UA_BAN, UA_IGNORE, UA_BACK };
@@ -629,6 +639,7 @@ static void build_panel(void)
 			}
 		}
 		lv_header(&pv, T("Chat"));
+		lv_add(&pv, T("Buscar imágenes (Safebooru, Danbooru, Sankaku)"))->id = PA_IMAGES;
 		lv_add(&pv, T("Unirse a un canal..."))->id = PA_JOIN;
 		lv_add(&pv, T("Explorar canales del servidor"))->id = PA_CHANLIST;
 		lv_add(&pv, T("Cambiar mi nick..."))->id = PA_NICK;
@@ -837,6 +848,7 @@ static void panel_activate(LItem *it, int how)
 	case PA_UACT: user_action(it->arg); break;
 	case PA_JOIN: field_edit(T("Unirse a un canal (ej: #vitasdk)"), "#", 60, 0, on_join, NULL); break;
 	case PA_CHANLIST: lists_open_chanlist(); break;
+	case PA_IMAGES: booru_ui_open(); break;
 	case PA_TR_IN:
 		if (c) {
 			if (!tr_ready()) { app_toast("%s", T("Configura el traductor en Ajustes")); break; }
@@ -1155,6 +1167,7 @@ void bottom_input(void)
 	case BM_MSG:   msg_input(); break;
 	case BM_LIST:  list_input(); break;
 	case BM_CARD:  card_input(); break;
+	case BM_BOORU: booru_ui_input(); break;
 	}
 }
 
@@ -1168,6 +1181,7 @@ void bottom_draw(void)
 	case BM_MSG:   draw_msg_actions(); break;
 	case BM_LIST:  list_draw(); break;
 	case BM_CARD:  card_draw_bottom(); break;
+	case BM_BOORU: booru_ui_draw(); break;
 	}
 	if (cf_open)
 		draw_confirm();

@@ -32,6 +32,8 @@ y se entiende con VitaIRC para [Android](https://github.com/ArchelKrozt/VitaIRC-
   reconexión automática, explorador de canales con búsqueda.
 - IRCv3 con bouncers (soju, ZNC): lo que te perdiste llega con su hora real.
 - **Traducción** con Google (gratis) o ChatGPT.
+- **Buscador de imágenes** en Safebooru, Danbooru y Sankaku: favoritos, guardar en la SD y enviar al
+  chat con el nombre del artista. El contenido adulto solo tras confirmar 18+ en Ajustes.
 - Historial en la SD, colores de mIRC, palabras de alerta, ignorados, sonido en menciones, español
   e inglés.
 

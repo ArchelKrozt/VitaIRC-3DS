@@ -33,6 +33,8 @@ talks to VitaIRC for [Android](https://github.com/ArchelKrozt/VitaIRC-Android) a
 - IRCv3: `server-time`, `batch`, `message-tags`, `draft/chathistory` (with a bouncer such as soju
   you get what you missed), reactions shown under messages.
 - **Translation** with Google (free) or ChatGPT: incoming messages, your own, or one message.
+- **Image search** on Safebooru, Danbooru and Sankaku: favorites, save to the SD card, send to the
+  chat with the artist's name. Adult content only after an 18+ confirmation in Settings.
 - History kept on the SD card, mIRC colors, highlight words, ignore list, a chime for mentions,
   English and Spanish.
 
